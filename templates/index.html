@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{{ app_title }}</title>
+    <link rel="stylesheet" href="/static/app.css?v=20260511m" />
+</head>
+<body>
+    <main class="shell">
+        <section class="panel hero">
+            <div>
+                <p class="eyebrow">Local Patent Agent</p>
+                <h1>{{ app_title }}</h1>
+            </div>
+            <div class="hero-actions">
+                <label class="model-picker" for="model-picker">
+                    <span>模型</span>
+                    <select id="model-picker" name="model_picker">
+                        {% for supported_model in supported_models %}
+                        <option value="{{ supported_model }}" {% if supported_model == model_name %}selected{% endif %}>{{ supported_model }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+            </div>
+        </section>
+
+        <section class="layout-grid">
+            <section class="panel chat-panel">
+                <div class="panel-header">
+                    <h2>Chatbot</h2>
+                    <span>自然语言入口</span>
+                </div>
+                <div class="chat-workspace">
+                    <aside class="chat-sidebar">
+                        <div class="chat-sidebar-header">
+                            <div>
+                                <h3>历史会话</h3>
+                                <span>点击可回到之前的 session</span>
+                            </div>
+                            <button id="new-session-button" class="secondary-button" type="button">新建</button>
+                        </div>
+                        <div id="session-list" class="session-list"></div>
+                    </aside>
+                    <section class="chat-main">
+                        <div id="chat-messages" class="chat-messages"></div>
+                        <form id="chat-form" class="composer">
+                            <textarea id="chat-input" rows="4" placeholder="输入你的问题"></textarea>
+                            <button type="submit">发送</button>
+                        </form>
+                        <p id="chat-feedback" class="feedback" aria-live="polite"></p>
+                    </section>
+                </div>
+            </section>
+
+            <section class="panel search-panel">
+                <div class="panel-header">
+                    <h2>结构化检索</h2>
+                    <span>关键词 + 申请人 + 年份</span>
+                </div>
+                <form id="search-form" class="search-form">
+                    <input id="keyword" name="keyword" type="text" placeholder="关键词，例如 固态电解质" required />
+                    <input id="assignee" name="assignee" type="text" placeholder="申请人，可选" />
+                    <div class="year-row">
+                        <input id="year-start" name="year_start" type="number" min="1900" max="2100" placeholder="起始年份" />
+                        <input id="year-end" name="year_end" type="number" min="1900" max="2100" placeholder="结束年份" />
+                    </div>
+                    <button type="submit">执行检索</button>
+                </form>
+                <p id="search-feedback" class="feedback" aria-live="polite"></p>
+                <div id="search-results" class="result-list empty-state">暂未查询</div>
+            </section>
+        </section>
+    </main>
+
+    <div id="toast-stack" class="toast-stack" aria-live="polite" aria-atomic="true"></div>
+
+    <script src="/static/app.js?v=20260511m"></script>
+</body>
+</html>

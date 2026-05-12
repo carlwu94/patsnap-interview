@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="engineering-whiteprint">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>锂离子电池专利问答平台 · 答辩 PPT</title>
+<link rel="stylesheet" href="../../.github/skills/html-ppt-skill/assets/fonts.css">
+<link rel="stylesheet" href="../../.github/skills/html-ppt-skill/assets/base.css">
+<link rel="stylesheet" id="theme-link" href="../../.github/skills/html-ppt-skill/assets/themes/engineering-whiteprint.css">
+<link rel="stylesheet" href="../../.github/skills/html-ppt-skill/assets/animations/animations.css">
+<link rel="stylesheet" href="style.css">
+</head>
+<body class="defense-body" data-themes="engineering-whiteprint,corporate-clean,academic-paper,arctic-cool,tokyo-night" data-theme-base="../../.github/skills/html-ppt-skill/assets/themes/">
+<div class="deck">
+
+  <section class="slide cover-slide" data-title="Cover">
+    <div class="hero-grid"></div>
+    <div class="deck-header"><span class="eyebrow">PATSNAP INTERVIEW · DEFENSE</span><span class="eyebrow">LOCAL-FIRST PATENT QA</span></div>
+    <div class="hero-copy">
+      <p class="kicker">锂离子电池专利问答平台</p>
+      <h1 class="h1 anim-fade-up" data-anim="fade-up">本地专利<br><span class="gradient-text">问答系统</span></h1>
+      <p class="lede">基于 MCP + Web Agent 完成 500 篇专利的本地入库、全文检索与多轮问答，并通过 OCR fallback 补齐扫描类 PDF 的解析能力，适合现场答辩直接演示。</p>
+      <div class="row wrap mt-l">
+        <span class="pill pill-accent">500 篇 PDF + 1 份 Excel 元数据</span>
+        <span class="pill">FastAPI + SQLite FTS5</span>
+        <span class="pill">FastMCP + DeepSeek</span>
+        <span class="pill">Web Demo @ 9876</span>
+      </div>
+    </div>
+    <div class="hero-stats anim-stagger-list" data-anim-target>
+      <div class="metric-card">
+        <div class="metric-value">500/500</div>
+        <div class="metric-label">解析成功</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-value">117</div>
+        <div class="metric-label">OCR fallback 命中</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-value">2</div>
+        <div class="metric-label">可选模型</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-value">5</div>
+        <div class="metric-label">MCP Tools</div>
+      </div>
+    </div>
+    <div class="deck-footer"><span class="dim2">答辩主题</span><span class="slide-number" data-current="1" data-total="9"></span></div>
+    <aside class="notes">
+      <p>这一页只讲三件事：第一，系统不是单点 demo，而是从数据到问答的闭环。第二，所有核心能力都能在本地跑起来，现场展示风险低。第三，后面我会重点展开架构、MCP、Agent 和踩坑解决方案。</p>
+    </aside>
+  </section>
+
+  <section class="slide" data-title="Agenda">
+    <div class="deck-header"><span class="eyebrow">AGENDA</span><span class="eyebrow">9 SLIDES</span></div>
+    <p class="kicker">答辩目录</p>
+    <h2 class="h2">目录</h2>
+    <div class="grid g2 mt-l agenda-grid anim-stagger-list" data-anim-target>
+      <div class="card card-accent"><div class="agenda-no">01</div><h4>整体架构图</h4><p class="dim">从数据源、入库、检索、MCP、Agent 到 Web 展示层的职责拆分。</p></div>
+      <div class="card card-accent"><div class="agenda-no">02</div><h4>关键技术选型及理由</h4><p class="dim">为什么选择 SQLite FTS5、FastAPI、FastMCP、DeepSeek 与 RapidOCR。</p></div>
+      <div class="card card-accent"><div class="agenda-no">03</div><h4>MCP Tools 的设计介绍</h4><p class="dim">5 个工具如何围绕真实问答动作设计，而不是机械暴露数据库接口。</p></div>
+      <div class="card card-accent"><div class="agenda-no">04</div><h4>Agent 实现方式说明</h4><p class="dim">History、tool schema、参数归一化、重复调用保护、流式输出。</p></div>
+      <div class="card card-accent"><div class="agenda-no">05</div><h4>遇到的挑战与解决方案</h4><p class="dim">扫描 PDF、公司别名、工具轮次上限、多轮记忆与 Markdown 渲染。</p></div>
+      <div class="card card-accent"><div class="agenda-no">06</div><h4>未来改进方向</h4><p class="dim">排序质量、引文证据、评测体系、部署形态和更细粒度数据服务。</p></div>
+    </div>
+    <div class="deck-footer"><span class="dim2">结构化讲述</span><span class="slide-number" data-current="2" data-total="9"></span></div>
+    <aside class="notes">
+      <p>这一页的作用是给评委一个预期：我不是按功能堆砌，而是按工程问题展开。这样后面的细节更容易被理解成一套系统设计，而不是一堆 feature。</p>
+    </aside>
+  </section>
+
+  <section class="slide" data-title="Architecture">
+    <div class="deck-header"><span class="eyebrow">ARCHITECTURE</span><span class="eyebrow">END-TO-END FLOW</span></div>
+    <p class="kicker">系统架构</p>
+    <h2 class="h2">本地数据底座 + 工具层 + Web Agent</h2>
+    <p class="arch-subtitle">数据、检索服务、MCP 调度与 Web 展示分层解耦，便于本地运行、独立验收与现场演示。</p>
+    <div class="arch-shell mt-m">
+      <div class="arch-topline">
+        <span class="arch-chip">本地存储</span>
+        <span class="arch-chip">本地服务</span>
+        <span class="arch-chip">MCP 调度</span>
+        <span class="arch-chip">Web 演示</span>
+        <span class="arch-chip proof">117 OCR fallback</span>
+        <span class="arch-chip proof strong">500/500 解析成功</span>
+      </div>
+      <svg class="arch-svg" viewBox="0 0 1600 580" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="system architecture diagram">
+        <defs>
+          <linearGradient id="flowBlue" x1="0" x2="1">
+            <stop offset="0%" stop-color="#8fb7ff"/>
+            <stop offset="100%" stop-color="#2f6fff"/>
+          </linearGradient>
+          <linearGradient id="softBlue" x1="0" x2="1">
+            <stop offset="0%" stop-color="#f6faff"/>
+            <stop offset="100%" stop-color="#eef4ff"/>
+          </linearGradient>
+          <marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+            <path d="M0,0 L8,4 L0,8 z" fill="#4b73bb"/>
+          </marker>
+        </defs>
+
+        <rect x="28" y="32" width="300" height="500" rx="28" class="lane"/>
+        <rect x="356" y="32" width="388" height="500" rx="28" class="lane"/>
+        <rect x="772" y="32" width="370" height="500" rx="28" class="lane"/>
+        <rect x="1170" y="32" width="402" height="500" rx="28" class="lane"/>
+
+        <text x="60" y="88" class="lane-title">数据源</text>
+        <text x="388" y="88" class="lane-title">数据处理与入库</text>
+        <text x="804" y="88" class="lane-title">本地服务与工具层</text>
+        <text x="1202" y="88" class="lane-title">交互层与模型</text>
+
+        <rect x="60" y="124" width="236" height="124" rx="20" class="node strong"/>
+        <text x="178" y="172" text-anchor="middle" class="node-title">index.xlsx</text>
+        <text x="178" y="202" text-anchor="middle" class="node-body">中文表头元数据</text>
+        <text x="178" y="228" text-anchor="middle" class="node-body">申请人 / IPC / 摘要</text>
+
+        <rect x="60" y="284" width="236" height="180" rx="20" class="node strong"/>
+        <text x="178" y="338" text-anchor="middle" class="node-title">500 篇 PDF</text>
+        <text x="178" y="370" text-anchor="middle" class="node-body">文本 PDF + 扫描 PDF</text>
+        <text x="178" y="396" text-anchor="middle" class="node-body">样本如 CN103682295A</text>
+        <text x="178" y="422" text-anchor="middle" class="node-body">作为全文解析输入</text>
+
+        <rect x="396" y="124" width="308" height="110" rx="20" class="node"/>
+        <text x="550" y="168" text-anchor="middle" class="node-title">scripts/init_db.py</text>
+        <text x="550" y="198" text-anchor="middle" class="node-body">读取 Excel，逐条解析 PDF</text>
+
+        <rect x="396" y="268" width="146" height="120" rx="20" class="node"/>
+        <text x="469" y="316" text-anchor="middle" class="node-title">PyMuPDF</text>
+        <text x="469" y="344" text-anchor="middle" class="node-body">优先抽文本层</text>
+
+        <rect x="558" y="268" width="146" height="120" rx="20" class="node accent"/>
+        <text x="631" y="316" text-anchor="middle" class="node-title inverse">RapidOCR</text>
+        <text x="631" y="344" text-anchor="middle" class="node-body inverse">无文本时 OCR</text>
+
+        <rect x="396" y="420" width="308" height="86" rx="20" class="node"/>
+        <text x="550" y="458" text-anchor="middle" class="node-title">SQLite + FTS5</text>
+        <text x="550" y="484" text-anchor="middle" class="node-body">结构化字段 + 全文索引</text>
+
+        <rect x="812" y="124" width="290" height="110" rx="20" class="node"/>
+        <text x="957" y="168" text-anchor="middle" class="node-title">patent_query service</text>
+        <text x="957" y="198" text-anchor="middle" class="node-body">search / details / trend / IPC / assignee</text>
+
+        <rect x="812" y="282" width="132" height="160" rx="20" class="node"/>
+        <text x="878" y="332" text-anchor="middle" class="node-title">FastAPI</text>
+        <text x="878" y="362" text-anchor="middle" class="node-body">/api/search</text>
+        <text x="878" y="388" text-anchor="middle" class="node-body">/api/chat</text>
+        <text x="878" y="414" text-anchor="middle" class="node-body">/stream</text>
+
+        <rect x="970" y="282" width="132" height="160" rx="20" class="node strong"/>
+        <text x="1036" y="332" text-anchor="middle" class="node-title">FastMCP</text>
+        <text x="1036" y="362" text-anchor="middle" class="node-body">5 个本地 Tool</text>
+        <text x="1036" y="388" text-anchor="middle" class="node-body">供 Agent 调度</text>
+        <text x="1036" y="414" text-anchor="middle" class="node-body">可独立验收</text>
+
+        <rect x="1210" y="124" width="154" height="146" rx="20" class="node"/>
+        <text x="1287" y="174" text-anchor="middle" class="node-title">Web UI</text>
+        <text x="1287" y="204" text-anchor="middle" class="node-body">chatbot 界面</text>
+        <text x="1287" y="230" text-anchor="middle" class="node-body">会话历史 / 搜索</text>
+
+        <rect x="1380" y="124" width="154" height="146" rx="20" class="node accent"/>
+        <text x="1457" y="174" text-anchor="middle" class="node-title inverse">DeepSeek</text>
+        <text x="1457" y="204" text-anchor="middle" class="node-body inverse">deepseek-v4-pro</text>
+        <text x="1457" y="230" text-anchor="middle" class="node-body inverse">或 v4-flash</text>
+
+        <rect x="1210" y="332" width="324" height="132" rx="20" class="node"/>
+        <text x="1372" y="382" text-anchor="middle" class="node-title">chat_service</text>
+        <text x="1372" y="412" text-anchor="middle" class="node-body">history、tool schema、参数归一化、循环控制、NDJSON 流式输出</text>
+
+        <path d="M296 186 C332 186 352 186 396 178" class="flow" marker-end="url(#arrow)"/>
+        <path d="M296 350 C332 350 352 350 396 404" class="flow" marker-end="url(#arrow)"/>
+        <path d="M550 234 L550 258" class="flow" marker-end="url(#arrow)"/>
+        <path d="M469 388 L469 420" class="flow" marker-end="url(#arrow)"/>
+        <path d="M631 388 L631 420" class="flow" marker-end="url(#arrow)"/>
+        <path d="M704 463 C740 463 760 463 812 179" class="flow" marker-end="url(#arrow)"/>
+        <path d="M957 234 L957 264" class="flow" marker-end="url(#arrow)"/>
+        <path d="M957 264 L878 282" class="flow" marker-end="url(#arrow)"/>
+        <path d="M957 264 L1036 282" class="flow" marker-end="url(#arrow)"/>
+        <path d="M944 362 C1040 362 1110 362 1210 197" class="flow dashed" marker-end="url(#arrow)"/>
+        <path d="M1102 362 C1140 362 1170 362 1210 396" class="flow dashed" marker-end="url(#arrow)"/>
+        <path d="M1364 197 C1370 197 1374 197 1380 197" class="flow dashed" marker-end="url(#arrow)"/>
+        <path d="M1457 270 L1457 332" class="flow dashed" marker-end="url(#arrow)"/>
+        <path d="M1287 270 L1287 332" class="flow dashed" marker-end="url(#arrow)"/>
+
+        <text x="344" y="166" class="link-label">元数据</text>
+        <text x="342" y="338" class="link-label">全文</text>
+        <text x="723" y="454" class="link-label">入库</text>
+        <text x="1120" y="352" class="link-label">工具调用</text>
+        <text x="1344" y="316" class="link-label">推理 / 流式</text>
+      </svg>
+    </div>
+    <div class="deck-footer"><span class="dim2">架构拆层</span><span class="slide-number" data-current="3" data-total="9"></span></div>
+    <aside class="notes">
+      <p>这页建议从左到右讲。先说为什么一定要分层：入库与检索是稳定层，MCP 是能力封装层，Agent 是策略层，Web 是展示层。这样每层都可以独立验证，调试成本低很多。</p>
+    </aside>
+  </section>
+
+  <section class="slide" data-title="Tech Choices">
+    <div class="deck-header"><span class="eyebrow">TECH STACK</span><span class="eyebrow">WHY THESE CHOICES</span></div>
+    <p class="kicker">技术选型</p>
+    <h2 class="h2">技术选型</h2>
+    <div class="grid g3 mt-l tech-grid anim-stagger-list" data-anim-target>
+      <div class="card card-hover">
+        <div class="tech-tag">Storage</div>
+        <h4>SQLite + FTS5</h4>
+        <p class="dim">单文件、零服务依赖、部署与演示成本低；同时支持结构化过滤和全文搜索，足够覆盖 500 篇专利的检索场景。</p>
+      </div>
+      <div class="card card-hover">
+        <div class="tech-tag">API</div>
+        <h4>FastAPI</h4>
+        <p class="dim">开发效率高，天然适合 REST + Streaming；本项目同时暴露查询接口与 NDJSON 聊天流，便于 Web 前端直接消费。</p>
+      </div>
+      <div class="card card-hover">
+        <div class="tech-tag">Tooling</div>
+        <h4>FastMCP</h4>
+        <p class="dim">把专利查询动作封装为可审计的 MCP Tool，既满足题目要求，也让 Agent 调用边界更清晰。</p>
+      </div>
+      <div class="card card-hover">
+        <div class="tech-tag">LLM</div>
+        <h4>DeepSeek + OpenAI 兼容 SDK</h4>
+        <p class="dim">保留 tool-calling 编程模型，同时适配本地可访问的 DeepSeek 服务，减少 provider 切换成本。</p>
+      </div>
+      <div class="card card-hover">
+        <div class="tech-tag">Parsing</div>
+        <h4>PyMuPDF + RapidOCR</h4>
+        <p class="dim">先走文本层提取，扫描件自动 fallback 到 OCR；最终命中 117 篇扫描类 PDF，全量 500/500 解析成功，0 失败。</p>
+      </div>
+      <div class="card card-hover">
+        <div class="tech-tag">Frontend</div>
+        <h4>Jinja2 + Vanilla JS/CSS</h4>
+        <p class="dim">演示页轻、依赖少、可控性强；流式输出、会话历史、Markdown 渲染都能直接按需求定制。</p>
+      </div>
+    </div>
+    <div class="deck-footer"><span class="dim2">选型思路</span><span class="slide-number" data-current="4" data-total="9"></span></div>
+    <aside class="notes">
+      <p>这里不要逐个念库名，而是强调选型原则：第一是本地演示稳定，第二是工程复杂度不要超过题目规模，第三是每个选择都能解释清楚 tradeoff。</p>
+    </aside>
+  </section>
+
+  <section class="slide" data-title="MCP Tools">
+    <div class="deck-header"><span class="eyebrow">MCP</span><span class="eyebrow">TOOLS AS CAPABILITIES</span></div>
+    <p class="kicker">MCP Tools</p>
+    <h2 class="h2">5 个 MCP Tools</h2>
+    <div class="grid g2 mt-l">
+      <div class="card card-accent">
+        <h4>设计原则</h4>
+        <ul class="bullet-list">
+          <li>一个 Tool 对应一个稳定意图：搜索、详情、趋势、IPC、公司名解析。</li>
+          <li>参数尽量贴近业务语义，避免把 SQL/表结构泄漏到 Agent 层。</li>
+          <li>先有 `list_assignees`，再做基于 `assignee` 的严格过滤，降低别名错误率。</li>
+          <li>Tool 结果可单独脚本验收，也可被 Agent 组合调用。</li>
+        </ul>
+      </div>
+      <div class="card card-outline">
+        <h4>调用链</h4>
+        <div class="tool-flow">
+          <div class="flow-pill">User Question</div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-pill">LLM 决策</div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-pill">FastMCP Tool</div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-pill">SQLite Query</div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-pill">Answer + Trace</div>
+        </div>
+      </div>
+    </div>
+    <div class="grid g3 mt-m tool-grid anim-stagger-list" data-anim-target>
+      <div class="card"><div class="tool-name">list_assignees</div><p class="dim">列出公司名称及专利数。作用是把“宁德时代”这类模糊别名收敛成数据库中的规范申请人名。</p></div>
+      <div class="card"><div class="tool-name">search_patents</div><p class="dim">支持关键词、申请人、年份组合检索；已支持公司+年份场景下 keyword 为空的合法查询。</p></div>
+      <div class="card"><div class="tool-name">get_patent_details</div><p class="dim">按专利号返回完整记录和抽取后的全文，用于问答时展开细节与原文依据。</p></div>
+      <div class="card"><div class="tool-name">get_top_ipc</div><p class="dim">输出专利集合中 IPC 主分类的高频分布，适合回答“哪些技术方向最集中”。</p></div>
+      <div class="card"><div class="tool-name">get_assignee_trend</div><p class="dim">针对单个公司返回年度申请趋势，适合回答“近几年布局变化”类问题。</p></div>
+      <div class="card card-outline"><div class="tool-name">验收方式</div><p class="dim">`scripts/demo_mcp_client.py` 会串行验证全部 5 个工具，保证 MCP 层可以独立证明可用。</p></div>
+    </div>
+    <div class="deck-footer"><span class="dim2">能力封装</span><span class="slide-number" data-current="5" data-total="9"></span></div>
+    <aside class="notes">
+      <p>这一页建议重点讲 `list_assignees`。它不是额外功能，而是 Agent 稳定性的关键前置工具。没有它，后续 search 和 trend 的参数很容易带着别名或脏词走偏。</p>
+    </aside>
+  </section>
+
+  <section class="slide" data-title="Agent">
+    <div class="deck-header"><span class="eyebrow">AGENT</span><span class="eyebrow">CONTROL LOOP</span></div>
+    <p class="kicker">Agent 机制</p>
+    <h2 class="h2">Agent 控制环</h2>
+    <div class="grid g2 mt-l">
+      <div class="card card-accent">
+        <h4>执行流程</h4>
+        <div class="process-list">
+          <div class="process-step"><span>1</span><div><strong>构建消息</strong><p>system prompt + clean history + 当前用户问题。</p></div></div>
+          <div class="process-step"><span>2</span><div><strong>下发 tool schema</strong><p>告诉模型每个 Tool 的用途与参数约束。</p></div></div>
+          <div class="process-step"><span>3</span><div><strong>调用 MCP Tool</strong><p>通过 FastMCP Client 在本地执行，不直接让模型碰数据库。</p></div></div>
+          <div class="process-step"><span>4</span><div><strong>参数归一化</strong><p>对公司别名、噪声 keyword、年份条件做清洗与补全。</p></div></div>
+          <div class="process-step"><span>5</span><div><strong>流式回传</strong><p>把 reasoning、tool trace、最终回答通过 NDJSON 推给前端。</p></div></div>
+          <div class="process-step"><span>6</span><div><strong>落历史</strong><p>UI transcript 与模型 history 分离，保证多轮追问可持续。</p></div></div>
+        </div>
+      </div>
+      <div class="stack">
+        <div class="card">
+          <h4>稳定性保护</h4>
+          <ul class="bullet-list compact">
+            <li>工具轮次上限从 4 提升到 8，但更关键的是重复工具调用检测。</li>
+            <li>当检测到相同签名的工具调用反复出现时，强制“基于当前证据作答”。</li>
+            <li>支持 history 透传，解决同一 session 多轮对话记忆缺失。</li>
+            <li>当未配置模型时自动退回规则兜底，确保演示仍可完成。</li>
+          </ul>
+        </div>
+        <div class="card card-outline">
+          <h4>前端可见效果</h4>
+          <ul class="bullet-list compact">
+            <li>聊天区可看到实时状态、工具调用与最终答复。</li>
+            <li>会话历史在本地存储，支持切换不同 session。</li>
+            <li>返回内容支持安全 Markdown 渲染，便于展示结构化答案。</li>
+          </ul>
+        </div>
+        <div class="card callout-card">
+          <div class="callout-title">一句话总结</div>
+          <p>Agent 负责“怎么问工具”，MCP Tool 负责“怎么查数据”，业务代码负责“怎么保证结果稳定”。</p>
+        </div>
+      </div>
+    </div>
+    <div class="deck-footer"><span class="dim2">策略与边界</span><span class="slide-number" data-current="6" data-total="9"></span></div>
+    <aside class="notes">
+      <p>这里一定要强调：不要把稳定性寄托在 prompt 上。本项目真正解决问题的是代码侧的 history 传递、参数归一化和重复调用短路，这些都是工程控制，而不是玄学调 prompt。</p>
+    </aside>
+  </section>
+
+  <section class="slide" data-title="Challenges">
+    <div class="deck-header"><span class="eyebrow">CHALLENGES</span><span class="eyebrow">PROBLEMS TO FIX</span></div>
+    <p class="kicker">问题与修复</p>
+    <h2 class="h2">难点与修复</h2>
+    <div class="challenge-proof card card-accent">
+      <div class="callout-title">OCR 结果</div>
+      <p>RapidOCR fallback 命中 117 篇扫描类 PDF，最终全量 500/500 解析成功，失败日志为空。</p>
+    </div>
+    <div class="challenge-table mt-l">
+      <div class="table-row table-head"><div>挑战</div><div>根因</div><div>解决方案</div><div>结果</div></div>
+      <div class="table-row"><div>扫描 PDF 抽取失败</div><div>部分 PDF 没有文本层，`page.get_text()` 返回空。</div><div>引入 RapidOCR，仅在空文本页触发 fallback，并把处理过程写进 activity log。</div><div>117 篇扫描类 PDF 被成功回收，最终 500/500 解析成功。</div></div>
+      <div class="table-row"><div>公司别名导致查询偏差</div><div>用户说“宁德时代”，数据库里是规范申请人全称。</div><div>新增 `list_assignees` Tool，先做别名解析，再把规范名写回后续工具参数。</div><div>公司/年份类问题命中率明显提升。</div></div>
+      <div class="table-row"><div>工具调用轮次耗尽</div><div>模型在相近参数上重复调用同一 Tool，无法收敛。</div><div>增加重复签名检测，触发“基于当前证据作答”，同时提升轮次预算。</div><div>减少无意义循环，不再频繁报上限错误。</div></div>
+      <div class="table-row"><div>多轮对话记不住上下文</div><div>前端 transcript 与模型实际输入历史脱节。</div><div>后端接口显式接收 `history`，前端拆分 `messages` 与 `history` 两套状态。</div><div>同一 session 支持持续追问与追踪。</div></div>
+    </div>
+    <div class="deck-footer"><span class="dim2">问题闭环</span><span class="slide-number" data-current="7" data-total="9"></span></div>
+    <aside class="notes">
+      <p>这页非常适合体现工程判断。建议把“根因”讲清楚，不要只说做了什么。评委更关注你如何定位问题，以及为什么这个修复比表层 patch 更稳。</p>
+    </aside>
+  </section>
+
+  <section class="slide" data-title="Future">
+    <div class="deck-header"><span class="eyebrow">ROADMAP</span><span class="eyebrow">NEXT ITERATION</span></div>
+    <p class="kicker">后续迭代</p>
+    <h2 class="h2">下一步</h2>
+    <div class="grid g2 mt-l roadmap-grid">
+      <div class="card">
+        <div class="roadmap-phase">方向 1</div>
+        <h4>结果可解释性</h4>
+        <p class="dim">给回答补上更细粒度的证据引用，例如返回命中的段落、页码和原文片段，而不仅是专利级别详情。</p>
+      </div>
+      <div class="card">
+        <div class="roadmap-phase">方向 2</div>
+        <h4>检索排序升级</h4>
+        <p class="dim">在 FTS5 之上叠加重排序或混合检索，让关键词、公司、年份和语义相关性组合得更稳。</p>
+      </div>
+      <div class="card">
+        <div class="roadmap-phase">方向 3</div>
+        <h4>评测与回归体系</h4>
+        <p class="dim">沉淀典型问答集，自动回归 MCP 工具正确性、Agent 工具路径和最终答案质量。</p>
+      </div>
+      <div class="card">
+        <div class="roadmap-phase">方向 4</div>
+        <h4>产品化演进</h4>
+        <p class="dim">支持更多筛选条件、批量导出、专利对比视图，以及可插拔的数据源和模型配置。</p>
+      </div>
+    </div>
+    <div class="card callout-card mt-m">
+      <div class="callout-title">工程判断</div>
+      <p>当前版本已经满足“本地可运行 + 可演示 + 有 MCP + 有 Agent”的题目要求；下一阶段的重点是提高可信度，而不是继续追求 UI 花样。</p>
+    </div>
+    <div class="deck-footer"><span class="dim2">迭代方向</span><span class="slide-number" data-current="8" data-total="9"></span></div>
+    <aside class="notes">
+      <p>这一页最好传达一个信号：我知道系统接下来该怎么变好，而且优先级是清楚的。先证据、再排序、再评测、最后再考虑更大范围的产品化能力。</p>
+    </aside>
+  </section>
+
+  <section class="slide center tc closing-slide" data-title="Thanks">
+    <div class="deck-header"><span class="eyebrow">DEMO</span><span class="eyebrow">Q&A</span></div>
+    <div class="closing-panel">
+      <p class="kicker">Q&amp;A</p>
+      <h1 class="h1"><span class="gradient-text">谢谢</span></h1>
+      <p class="lede">欢迎提问。</p>
+    </div>
+    <div class="deck-footer"><span class="dim2">Thank You</span><span class="slide-number" data-current="9" data-total="9"></span></div>
+    <aside class="notes">
+      <p>收尾时不要重复前面所有内容。只强调一件事：这不是 PPT demo，而是一个可以真的运行、真的查询、真的调用 MCP Tool 的系统。然后无缝切到 Web 页面做现场演示。</p>
+    </aside>
+  </section>
+</div>
+<script src="../../.github/skills/html-ppt-skill/assets/runtime.js"></script>
+</body>
+</html>

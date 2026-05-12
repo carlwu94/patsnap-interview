@@ -1,0 +1,15 @@
+.github
+.venv/
+.pytest_cache/
+__pycache__/
+*.pyc
+
+artifacts/
+logs/
+appsettings.toml
+
+
+target/
+
+.DS_Store
+Thumbs.db

@@ -1,0 +1,1 @@
+"""Patent QA platform package."""

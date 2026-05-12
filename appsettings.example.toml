@@ -1,0 +1,15 @@
+# Local runtime configuration template for the patent QA platform.
+# Copy this file to appsettings.toml and fill in your real DeepSeek API key.
+
+[llm]
+provider = "deepseek"
+api_key = "<your-api-key>"
+base_url = "https://api.deepseek.com/v1"
+model = "deepseek-v4-pro"
+
+[ingestion]
+use_ocr_fallback = true
+activity_log_filename = "parse_activity.csv"
+failure_log_filename = "parse_failures.csv"
+commit_interval = 20
+progress_interval = 20
